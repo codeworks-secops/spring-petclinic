@@ -11,14 +11,14 @@ steps:
   - id: 'Deploying The Application INSIDE GKE'
     name: 'gcr.io/cloud-builders/gcloud'
     env:
-      - 'CLOUDSDK_COMPUTE_ZONE=$_CLOUD_SDK_COMPUTE_ZONE'
-      - 'CLOUDSDK_CONTAINER_CLUSTER=$_CLOUD_SDK_CONTAINER_CLUSTER'
+      - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUDSDK_COMPUTE_ZONE}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUDSDK_CONTAINER_CLUSTER}'
       - 'KUBECONFIG=/.kube/config'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-            gcloud container clusters get-credentials ${CLOUDSDK_CONTAINER_CLUSTER} --project $PROJECT_ID --zone ${CLOUDSDK_COMPUTE_ZONE}
+            gcloud container clusters get-credentials ${_CLOUDSDK_CONTAINER_CLUSTER} --project $PROJECT_ID --zone ${_CLOUDSDK_COMPUTE_ZONE}
             sed -i 's|replace_me_to_pull_the_right_docker_image|gcr.io/$PROJECT_ID/pet-clinic:$SHORT_SHA|' ./tools/k8s/deployment.yaml
             kubectl apply -f ./tools/k8s/deployment.yaml
             kubectl apply -f ./tools/k8s/service.yaml

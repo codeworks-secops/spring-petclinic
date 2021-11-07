@@ -1,0 +1,29 @@
+steps:
+  - name: maven:3-jdk-8
+    entrypoint: mvn
+    args: ["package", "-Dmaven.test.skip=true"]
+
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/pet-clinic:$SHORT_SHA", "."]
+
+  - id: 'Deploy to gke'
+    name: 'gcr.io/cloud-builders/gcloud'
+    env:
+      - 'CLOUDSDK_COMPUTE_ZONE=${_CLOUDSDK_COMPUTE_ZONE}'
+      - 'CLOUDSDK_CONTAINER_CLUSTER=${_CLOUDSDK_CONTAINER_CLUSTER}'
+      - 'KUBECONFIG=/.kube/config'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+            gcloud container clusters get-credentials ${_CLOUDSDK_CONTAINER_CLUSTER} --project $PROJECT_ID --zone ${_CLOUDSDK_COMPUTE_ZONE}
+            sed -i 's|replace_me_to_pull_the_right_docker_image|gcr.io/$PROJECT_ID/pet-clinic:$SHORT_SHA|' ./tools/k8s/deployment.yaml
+            kubectl apply -f ./tools/k8s/deployment.yaml
+            kubectl apply -f ./tools/k8s/service.yaml
+    timeout: 2000s
+
+substitutions:
+  _CLOUDSDK_COMPUTE_ZONE: europe-west1-b
+  _CLOUDSDK_CONTAINER_CLUSTER: my-cluster
+
+images: ["gcr.io/$PROJECT_ID/demo"]
